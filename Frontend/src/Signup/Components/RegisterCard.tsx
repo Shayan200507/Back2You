@@ -8,6 +8,9 @@ type FormType = {
    username: string
    First_Name: string
    Last_Name: string
+   University_Name: string
+   password: string
+   retypedPassword: string
 
 
 }
@@ -21,7 +24,10 @@ function RegisterCard(){
    email: "",
    username: "",
    First_Name: "",
-   Last_Name: ""
+   Last_Name: "",
+   University_Name: "",
+   password: "",
+   retypedPassword: ""
 })
 
     const inputStyles = "rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
@@ -51,6 +57,9 @@ function RegisterCard(){
             
             
             <input type="text" name="Last_Name" className={inputStyles} placeholder="Last Name"  value={formData.Last_Name}  onChange={(event) => setformData((prev:FormType) => { return {...prev, Last_Name: event.target.value}} )}   required />
+
+            <label htmlFor="University_Name" className={labelStyles}>University name:</label>
+            <input id="University_Name" type="text" name="University_Name" className={inputStyles} placeholder="University Name" value={formData.University_Name} onChange={(event) => setformData((prev:FormType) => { return {...prev, University_Name: event.target.value}} )} required />
             
 
 
@@ -75,11 +84,11 @@ function RegisterCard(){
 
             <label htmlFor="password" className={labelStyles}>Password:</label>
 
-            <input id="password" type="password" name="password" className={inputStyles} placeholder="Password" pattern="^\S{8,}$" title="no spaces allowed in the password and length must be 8 characters"  required />
+            <input id="password" type="password" name="password" className={inputStyles} placeholder="Password" pattern="^\S{8,}$" title="no spaces allowed in the password and length must be 8 characters" value={formData.password} onChange={(event) => setformData((prev:FormType) => { return {...prev, password: event.target.value}} )} required />
 
                 
         
-            <input type="password" name="retypedPassword" className={inputStyles} placeholder="Retype Password" pattern="^\S{8,}$" title="no spaces allowed"  required />
+            <input type="password" name="retypedPassword" className={inputStyles} placeholder="Retype Password" pattern="^\S{8,}$" title="no spaces allowed" value={formData.retypedPassword} onChange={(event) => setformData((prev:FormType) => { return {...prev, retypedPassword: event.target.value}} )} required />
         
 
 
