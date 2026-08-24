@@ -1,0 +1,26 @@
+services:
+  db:
+    container_name: back2you
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: Shayan
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+      POSTGRES_DB: back2you
+    volumes:
+      - db:/data/postgres
+    ports:
+      - "5132:5432"
+    networks:
+      - db
+    restart: unless-stopped
+
+
+networks:
+  db:
+    driver: bridge
+
+volumes:
+  db:
+
+  

@@ -1,3 +1,53 @@
+
+
+
+
+
 spring:
+
+
+  datasource:
+    url: jdbc:postgresql://localhost:5132/back2you
+    username: Shayan
+    password: password
+
+
+
   application:
     name: back2you
+
+
+
+
+
+
+
+  jpa:
+
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  main:
+    web-application-type: servlet
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+
+cors:
+  allowed-origins: "*"
+  allowed-methods: "*"
+  allowed-headers: "*"
+  exposed-headers: "*"
+
+
+server:
+  port: 8080
+
+
+
