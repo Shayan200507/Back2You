@@ -1,11 +1,38 @@
 
-
-
+import axios from "axios"
+import { useEffect } from "react"
+import { useNavigate } from "react-router"
 import SignupHeader from "./Components/SignupHeader"
 import RegisterCard from "./Components/RegisterCard"
 
 
 function SingupPage(){
+
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        const token = localStorage.getItem("token")
+
+        if (!token) {
+            return
+        }
+
+        const checkCurrentUser = async () => {
+            try {
+                await axios.get("http://localhost:8080/api/v1/users/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+
+                navigate("/home")
+            } catch {
+                localStorage.removeItem("token")
+            }
+        }
+
+        checkCurrentUser()
+    }, [navigate])
 
     return(
 

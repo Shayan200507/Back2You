@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -37,7 +38,11 @@ public class authService {
             Optional<User> user = userRepository.findByEmail(loginDetails.getEmail());
             if (user.isEmpty()) throw new BadCredentialsException("Invalid email or password");
 
-            return  AuthResponse.builder().token(jwtService.createToken((UserDetails) user.get())).build();
+            User authenticatedUser = user.get();
+
+            return AuthResponse.builder()
+                    .token(jwtService.createToken((UserDetails) authenticatedUser))
+                    .build();
 
 
 
@@ -53,18 +58,36 @@ public class authService {
     public AuthResponse RegisterRequest(RegistrationDetails registrationDetails){
 
 
+        System.out.println("In the abckend");
+
+
         if(userRepository.exists(registrationDetails.getEmail())){
             throw new RuntimeException("Account already exists");
         }
         else {
             User account =  User.builder().email(registrationDetails.getEmail()).firstname(registrationDetails.getFirstname())
-                    .lastname(registrationDetails.getLastname()).password(passwordEncoder.encode(registrationDetails.getPassword())).role(Role.USER).build();
+                    .lastname(registrationDetails.getLastname())
+                    .birthDate(registrationDetails.getBirthDate())
+                    .UniversityName(normalizeUniversityName(registrationDetails.getUniversityName()))
+                    .password(passwordEncoder.encode(registrationDetails.getPassword()))
+                    .role(Role.USER)
+                    .build();
 
-            userRepository.save(account);
+            User savedAccount = userRepository.save(account);
 
-            return  AuthResponse.builder().token(jwtService.createToken(account)).build();
+            return AuthResponse.builder()
+                    .token(jwtService.createToken(savedAccount))
+                    .build();
         }
 
 
+    }
+
+    private String normalizeUniversityName(String universityName) {
+        if (universityName == null) {
+            return null;
+        }
+
+        return universityName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 }

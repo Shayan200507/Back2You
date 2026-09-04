@@ -1,45 +1,74 @@
-import logo from "../../assets/back2you-logo-transparent.png"
+import axios from "axios"
 import { useState } from "react"
+import { useNavigate } from "react-router"
+import SharedHeader from "../../Components/SharedHeader"
 
+type LoginFormType = {
+    email: string
+    password: string
+}
+
+type LoginResponse = {
+    token: string
+}
 
 function SignupHeader(){
-        const [warning] = useState<string>("")
+    const navigate = useNavigate()
+    const [warning, setWarning] = useState<string>("")
+    
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+    const [loginFormData, setLoginFormData] = useState<LoginFormType>({
+        email: "",
+        password: ""
+    })
+
     const loginInputStyles = "rounded-md border border-gray-300 px-3 py-1 text-sm outline-none focus:border-gray-500"
 
-    return(<>
+    const handleLogin = async (submittedFormData: FormData) => {
+        setWarning("")
+        setIsSubmitting(true)
 
-    <header className="w-full h-[50px] bg-white flex items-center justify-between ">
-       
-        <div className="flex items-center ml-[8px]">
-        <img src={logo} alt="" className="w-[40px]" />
-        <h1 className="font-system-ui font-medium">Back2You</h1>
-        </div>
+        try {
+            const response = await axios.post<LoginResponse>("http://localhost:8080/api/v1/auth/login", {
+                email: submittedFormData.get("email"),
+                password: submittedFormData.get("password")
+            })
 
+            const data: LoginResponse = response.data
+           
+            localStorage.setItem("token", data.token)
+            navigate("/home")
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                setWarning(error.response?.data || "Login failed")
+            } else {
+                setWarning("Login failed")
+            }
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
 
-        <div className="flex  items-center mr-[20px]">
-            
-        <form className="flex items-center gap-2">
+    return(
+        <SharedHeader>
+        <form className="flex items-center gap-2" action={handleLogin}>
 
                 
                 <div className="text-sm text-red-600">{warning}</div>
-                <input type="text" name="username" className={loginInputStyles} placeholder="Username" required />
+         
+                <input type="email" name="email" className={loginInputStyles} placeholder="Email" value={loginFormData.email} onChange={(event) => setLoginFormData((prev:LoginFormType) => { return {...prev, email: event.target.value}} )} required />
 
-                <input type="password" name="password" className={loginInputStyles} placeholder="Password" required />
+                <input type="password" name="password" className={loginInputStyles} placeholder="Password" value={loginFormData.password} onChange={(event) => setLoginFormData((prev:LoginFormType) => { return {...prev, password: event.target.value}} )} required />
 
-                <button type="submit" className="rounded-md bg-gray-800 px-4 py-1 text-sm font-medium text-white hover:bg-gray-700">Login</button>
+                <button type="submit" disabled={isSubmitting} className="rounded-md bg-gray-800 px-4 py-1 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-500  active:scale-0.95  transition-transform duration-200 ease-in-out">
+                    {isSubmitting ? "Logging in..." : "Login"}
+                </button>
 
 
 
         </form>
-
-        </div>
-
-
-
-
-    </header >
-    
-    </>)
+        </SharedHeader>
+    )
 
 }
 

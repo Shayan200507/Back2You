@@ -25,7 +25,7 @@ spring:
   jpa:
 
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -48,6 +48,13 @@ cors:
 
 server:
   port: 8080
+
+
+
+aws:
+  region: "ca-central-1"
+  s3:
+    bucket: "back2you-169281574152-ca-central-1-an"
 
 
 

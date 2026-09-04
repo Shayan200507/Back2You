@@ -2,8 +2,6 @@ package com.back2you.back2you.JWT;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,24 +17,32 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
+    private static final long JWT_EXPIRATION_MS = 1000 * 60 * 60 * 24;
+
     private final Dotenv dotenv = Dotenv.configure()
-            .directory("C:/Java Projects/Back2You/Backend")
+            .ignoreIfMissing()
             .load();
 
-    private  final  String Secret = dotenv.get("JWT_SECRET");
+    private final String secret = System.getenv("JWT_SECRET") != null
+            ? System.getenv("JWT_SECRET")
+            : dotenv.get("JWT_SECRET");
 
 
 
     public Key getSecretKeyObject(){
 
-        byte[] key = Base64.getDecoder().decode(Secret);
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET is not configured");
+        }
+
+        byte[] key = Base64.getDecoder().decode(secret);
         return Keys.hmacShaKeyFor(key);
 
     }
 
 
     public Claims extractAllClaims(String token){
-        return Jwts.parser().verifyWith((SecretKey) getSecretKeyObject()).build().parse(token).accept(Jws.CLAIMS).getPayload();
+        return Jwts.parser().verifyWith((SecretKey) getSecretKeyObject()).build().parseSignedClaims(token).getPayload();
 
     }
 
@@ -52,11 +58,11 @@ public class JwtService {
     }
 
     public String createToken(UserDetails user, Map<String,Object> extraclaims){
-        return Jwts.builder().claims(extraclaims).subject(user.getUsername()).issuedAt(new Date(System.currentTimeMillis())).expiration(new Date(System.currentTimeMillis()+ 1000 * 60 * 60)).signWith(getSecretKeyObject()).compact();
+        return Jwts.builder().claims(extraclaims).subject(user.getUsername()).issuedAt(new Date(System.currentTimeMillis())).expiration(new Date(System.currentTimeMillis()+ JWT_EXPIRATION_MS)).signWith(getSecretKeyObject()).compact();
     }
 
     public String createToken(UserDetails user){
-        return Jwts.builder().subject(user.getUsername()).issuedAt(new Date(System.currentTimeMillis())).expiration(new Date(System.currentTimeMillis()+ 1000 * 60 * 60)).signWith(getSecretKeyObject()).compact();
+        return Jwts.builder().subject(user.getUsername()).issuedAt(new Date(System.currentTimeMillis())).expiration(new Date(System.currentTimeMillis()+ JWT_EXPIRATION_MS)).signWith(getSecretKeyObject()).compact();
     }
 
     public boolean verifyToken(String Token, UserDetails user){

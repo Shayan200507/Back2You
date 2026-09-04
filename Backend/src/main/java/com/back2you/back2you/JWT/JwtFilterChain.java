@@ -1,6 +1,7 @@
 package com.back2you.back2you.JWT;
 
 import com.back2you.back2you.User.UserDetailsService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,10 +12,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+
 @RequiredArgsConstructor
 @Component
 public class JwtFilterChain extends OncePerRequestFilter {
@@ -26,40 +29,42 @@ public class JwtFilterChain extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        final String Header = request.getHeader("Authorization");
+        final String header = request.getHeader("Authorization");
         final String jwt;
         final String email;
-        final UserDetails user;
 
 
-        if (Header == null || !Header.startsWith("Bearer ")){
 
-            filterChain.doFilter(request,response);
+        if (!StringUtils.hasText(header) || !header.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            System.out.println("wrong place");
+            filterChain.doFilter(request, response);
             return;
-
-
         }
-        else {
 
-            jwt = Header.substring(7);
+        jwt = header.substring(7).trim();
+        System.out.println(jwt);
+
+        try {
             email = jwtService.getEmail(jwt);
-            try {
+            System.out.println(email);
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 if (jwtService.verifyToken(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
                     token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(token);
-
                 }
-
-
-            } catch (UsernameNotFoundException e) {
-                System.out.println(e);
-                throw e;
-
+                System.out.println("reached here");
             }
-
+        } catch (UsernameNotFoundException | JwtException | IllegalArgumentException e) {
+            SecurityContextHolder.clearContext();
 
         }
+
+        filterChain.doFilter(request, response);
     }
 }
