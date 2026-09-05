@@ -60,7 +60,7 @@ function SignupHeader(){
 
                 <input type="password" name="password" className={loginInputStyles} placeholder="Password" value={loginFormData.password} onChange={(event) => setLoginFormData((prev:LoginFormType) => { return {...prev, password: event.target.value}} )} required />
 
-                <button type="submit" disabled={isSubmitting} className="rounded-md bg-gray-800 px-4 py-1 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-500  active:scale-0.95  transition-transform duration-200 ease-in-out">
+                <button type="submit" disabled={isSubmitting} className="rounded-md bg-gray-800 px-4 py-1 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-500  ">
                     {isSubmitting ? "Logging in..." : "Login"}
                 </button>
 

@@ -33,7 +33,7 @@ function HomePage(){
 
     const handleLogout = useCallback(() => {
         localStorage.removeItem("token")
-        navigate("/")
+        navigate("/", { replace: true })
     }, [navigate])
 
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,7 +170,7 @@ function HomePage(){
                     </div>
 
                     <div className="flex items-center justify-end gap-8 mt-[20px]">
-                        <button type="button" className="flex min-w-[240px] items-center justify-center gap-3 rounded-md bg-gray-800 px-5 py-3 text-left text-sm font-semibold text-white transition-transform duration-200 ease-in-out hover:bg-gray-700 active:scale-95">
+                        <button type="button" onClick={() => navigate("/createPost")} className="flex min-w-[240px] items-center justify-center gap-3 rounded-md bg-gray-800 px-5 py-3 text-left text-sm font-semibold text-white transition-transform duration-200 ease-in-out hover:bg-gray-700 active:scale-95">
                             <span className="text-lg">+</span>
                             <span className="flex flex-col gap-1">
                                 <span>Report an Item</span>
@@ -178,7 +178,7 @@ function HomePage(){
                             </span>
                         </button>
 
-                        <button type="button" className="flex min-w-[240px] items-center justify-center gap-3 rounded-md border border-gray-200 bg-white px-5 py-3 text-left text-sm font-semibold text-gray-800 shadow-sm transition-transform duration-200 ease-in-out hover:bg-gray-50 active:scale-95">
+                        <button type="button" onClick={() => navigate("/browse")} className="flex min-w-[240px] items-center justify-center gap-3 rounded-md border border-gray-200 bg-white px-5 py-3 text-left text-sm font-semibold text-gray-800 shadow-sm transition-transform duration-200 ease-in-out hover:bg-gray-50 active:scale-95">
                             <span className="text-lg">?</span>
                             <span className="flex flex-col gap-1">
                                 <span>Browse Posts</span>
