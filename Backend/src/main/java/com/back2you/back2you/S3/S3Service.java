@@ -6,13 +6,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,35 @@ public class S3Service {
         } catch (S3Exception | IOException e) {
             throw new S3ObjectRetrievalException(bucket, key, e);
         }
+    }
+
+
+    public String generatePresignedUrl(String key){
+
+        S3Presigner s3Presigner =  S3Presigner.builder()
+                .region(Region.CA_CENTRAL_1)
+                .build();
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key).build();
+
+        GetObjectPresignRequest presignRequest =
+                GetObjectPresignRequest.builder()
+                        .signatureDuration(Duration.ofMinutes(5))
+                        .getObjectRequest(getObjectRequest)
+                        .build();
+
+
+
+        return s3Presigner
+                .presignGetObject(presignRequest)
+                .url()
+                .toString();
+
+
+
+
+
+
     }
 
 

@@ -9,6 +9,8 @@ import CreatePostPage from "./CreatePost/CreatePostPage"
 import BrowsePage from "./Browse/BrowsePage"
 import LostPostPage from "./LostPost/LostPostPage"
 import FoundPostPage from "./FoundPost/FoundPostPage"
+import PostDetails from "./PostDetails/PostDetails"
+import AllPostsPage from "./AllPosts/AllPostsPage"
 
 function App() {
 
@@ -24,6 +26,8 @@ function App() {
       <Route path = "/browse" element={<BrowsePage />} />
       <Route path = "/lostPost" element={<LostPostPage />} />
       <Route path = "/foundPost" element={<FoundPostPage />} />
+      <Route path = "/postDetails/:postId" element={<PostDetails />} />
+      <Route path = "/allPosts" element={<AllPostsPage />} />
     </Routes>
     </BrowserRouter>
 

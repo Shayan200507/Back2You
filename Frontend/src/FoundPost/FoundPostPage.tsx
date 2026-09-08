@@ -37,6 +37,9 @@ function FoundPostPage() {
         dateFound: ""
     })
     const [picList, setpicList] = useState<ItemPhoto[]>([])
+    const [securityQuestions, setSecurityQuestions] = useState<string[]>([])
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState("")
     const imageUrls = useRef<string[]>([])
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -62,18 +65,55 @@ function FoundPostPage() {
         setpicList(currentPictures => currentPictures.filter(photo => photo.id !== id))
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (isSubmitting) return
+        setSubmitError("")
+        const token = localStorage.getItem("token")
+        if (!token) {
+            navigate("/home", { replace: true })
+            return
+        }
+        if (!formData.itemName.trim() || !formData.itemDescription.trim()
+            || !formData.foundLocation.trim() || !formData.dateFound || picList.length === 0) {
+            setSubmitError("Please enter the item details, found location and date, and add at least one photo.")
+            return
+        }
         const submissionData = new FormData()
         submissionData.append("itemName", formData.itemName.trim())
         submissionData.append("itemDescription", formData.itemDescription.trim())
-        submissionData.append("foundLocation", formData.foundLocation.trim())
-        submissionData.append("dateFound", formData.dateFound)
-        picList.forEach(photo => submissionData.append("photos", photo.file))
-
-        console.log("Found item submission:", submissionData, {
-            ...formData,
-            photos: picList.map(photo => photo.file)
+        submissionData.append("location", formData.foundLocation.trim())
+        submissionData.append("date", formData.dateFound)
+        securityQuestions.map(question => question.trim()).filter(Boolean).forEach((question, index) => {
+            submissionData.append(`securityQuestions[${index}]`, question)
         })
+        picList.forEach(photo => submissionData.append("files", photo.file))
+
+        setIsSubmitting(true)
+        try {
+            await axios.post("http://localhost:8080/api/v1/posts/found", submissionData, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            navigate("/home")
+        } catch (error) {
+            let message = "Could not submit your found item. Please try again."
+            if (axios.isAxiosError(error)) {
+                const responseData: unknown = error.response?.data
+                if (typeof responseData === "string" && responseData.trim()) {
+                    message = responseData
+                } else if (responseData && typeof responseData === "object") {
+                    const body = responseData as Record<string, unknown>
+                    const serverMessage = [body.detail, body.message, body.error].find(
+                        value => typeof value === "string" && value.trim()
+                    )
+                    if (typeof serverMessage === "string") message = serverMessage
+                } else if (!error.response) {
+                    message = "Could not reach the server. Please check your connection and try again."
+                }
+            }
+            setSubmitError(message)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     useEffect(() => {
@@ -118,7 +158,7 @@ function FoundPostPage() {
                     <h1 className="text-2xl font-semibold text-gray-800">Report a Found Item</h1>
 
                     <div className="flex flex-col gap-2">
-                        <p className="text-sm font-medium text-gray-800">Item photos <span className="font-normal text-gray-500">(optional)</span></p>
+                        <p className="text-sm font-medium text-gray-800">Item photos <span className="font-normal text-gray-500">(at least 1 required)</span></p>
                         {picList.length < 3 ? <MyDropzone onDrop={onDrop} /> : null}
                         {picList.length > 0 && (
                             <div className="flex flex-wrap gap-3">
@@ -143,17 +183,63 @@ function FoundPostPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="foundLocation" className="text-sm font-medium text-gray-800">Approximate found location <span className="font-normal text-gray-500">(optional)</span></label>
+                        <label htmlFor="foundLocation" className="text-sm font-medium text-gray-800">Approximate found location (required)</label>
                         <input id="foundLocation" name="foundLocation" value={formData.foundLocation} onChange={(event) => { const value = event.target.value; setFormData(previous => ({ ...previous, foundLocation: value })) }} type="text" placeholder="e.g. Near the library" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-800" />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label htmlFor="dateFound" className="text-sm font-medium text-gray-800">Approximate date found <span className="font-normal text-gray-500">(optional)</span></label>
+                        <label htmlFor="dateFound" className="text-sm font-medium text-gray-800">Approximate date found (required)</label>
                         <input id="dateFound" name="dateFound" value={formData.dateFound} onChange={(event) => { const value = event.target.value; setFormData(previous => ({ ...previous, dateFound: value })) }} type="date" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-800" />
                     </div>
 
+                    <fieldset className="flex flex-col gap-3">
+                        <legend className="mb-2 text-sm font-medium text-gray-800">Security questions <span className="font-normal text-gray-500">(optional, up to 3)</span></legend>
+                        {securityQuestions.map((question, index) => (
+                            <div key={index} className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between gap-3">
+                                    <label htmlFor={`securityQuestion-${index}`} className="text-sm font-medium text-gray-800">Security question {index + 1}</label>
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove security question ${index + 1}`}
+                                        onClick={() => setSecurityQuestions(previous => previous.filter((_, questionIndex) => questionIndex !== index))}
+                                        className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                                <input
+                                    id={`securityQuestion-${index}`}
+                                    name="securityQuestions"
+                                    type="text"
+                                    value={question}
+                                    onChange={(event) => {
+                                        const value = event.target.value
+                                        setSecurityQuestions(previous => previous.map((currentQuestion, questionIndex) => questionIndex === index ? value : currentQuestion))
+                                    }}
+                                    placeholder="e.g. What is inside the wallet?"
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-800"
+                                />
+                            </div>
+                        ))}
+                        {securityQuestions.length < 3 && (
+                            <button
+                                type="button"
+                                onClick={() => setSecurityQuestions(previous => previous.length < 3 ? [...previous, ""] : previous)}
+                                className="self-start rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                            >
+                                {securityQuestions.length === 0 ? "Add security question" : "Add one more question"}
+                            </button>
+                        )}
+                    </fieldset>
+
+                    {submitError && (
+                        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <p className="font-semibold">Unable to submit</p>
+                            <p className="mt-1 whitespace-pre-wrap break-words">{submitError}</p>
+                        </div>
+                    )}
                     {formData.itemName.trim() && formData.itemDescription.trim() ? (
-                        <button type="submit" className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">Submit Found Item</button>
+                        <button type="submit" disabled={isSubmitting} className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? "Submitting..." : "Submit Found Item"}</button>
                     ) : null}
                 </form>
             </main>

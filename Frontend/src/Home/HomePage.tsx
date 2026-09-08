@@ -4,6 +4,7 @@ import { useNavigate } from "react-router"
 import SharedHeader from "../Components/SharedHeader"
 import defaultProfilePic from "../assets/default-profile.svg"
 import homeBackground from "../assets/home-background.png"
+import UserPosts from "./UserPosts"
 
 type Role = "USER" | "ADMIN"
 
@@ -187,6 +188,7 @@ function HomePage(){
                         </button>
                     </div>
                 </div>
+                {user && <UserPosts />}
             </main>
         </div>
     )

@@ -21,7 +21,7 @@ public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private  Integer /status;
+    private  Integer ID;
 
     private LocalDate birthDate;
 
