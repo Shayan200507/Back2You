@@ -23,7 +23,16 @@ function UserPosts({ showAll = false }: { showAll?: boolean }) {
                     headers: { Authorization: `Bearer ${token}` },
                     signal: controller.signal
                 })
-                if (!controller.signal.aborted) setPosts(response.data)
+                if (!controller.signal.aborted) {
+                    const createdTime = (post: Post) => {
+                        const timestamp = post.dateCreated ? Date.parse(post.dateCreated) : NaN
+                        return Number.isFinite(timestamp) ? timestamp : -Infinity
+                    }
+                    const sortedPosts = [...response.data].sort((a, b) =>
+                        createdTime(b) - createdTime(a) || b.id - a.id
+                    )
+                    setPosts(sortedPosts)
+                }
             } catch (requestError) {
                 if (controller.signal.aborted) return
                 if (axios.isAxiosError(requestError) && requestError.response?.status === 401) {

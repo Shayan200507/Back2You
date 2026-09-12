@@ -11,6 +11,7 @@ import LostPostPage from "./LostPost/LostPostPage"
 import FoundPostPage from "./FoundPost/FoundPostPage"
 import PostDetails from "./PostDetails/PostDetails"
 import AllPostsPage from "./AllPosts/AllPostsPage"
+import Claim from './Claim/Claim.tsx';
 
 function App() {
 
@@ -28,6 +29,7 @@ function App() {
       <Route path = "/foundPost" element={<FoundPostPage />} />
       <Route path = "/postDetails/:postId" element={<PostDetails />} />
       <Route path = "/allPosts" element={<AllPostsPage />} />
+      <Route path='/Claim/:postId' element={<Claim/>}/>
     </Routes>
     </BrowserRouter>
 

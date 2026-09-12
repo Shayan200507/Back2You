@@ -6,16 +6,7 @@ import defaultProfilePic from "../assets/default-profile.svg"
 import homeBackground from "../assets/home-background.png"
 import UserPosts from "./UserPosts"
 
-type Role = "USER" | "ADMIN"
-
-type UserDto = {
-    id: number
-    firstname: string
-    lastname: string
-    universityName: string
-    email: string
-    role: Role
-}
+import type { UserDto } from "../types/UserDto"
 
 function HomePage(){
 
@@ -24,6 +15,7 @@ function HomePage(){
     const [profileImageUrl, setProfileImageUrl] = useState<string>("")
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
     const [isUploadingProfileImage, setIsUploadingProfileImage] = useState<boolean>(false)
+    
     const selectedProfileImageUrl = useMemo(() => {
         if (!profileImageFile) {
             return ""
@@ -32,11 +24,18 @@ function HomePage(){
         return URL.createObjectURL(profileImageFile)
     }, [profileImageFile])
 
+    
+    
+    
+    
+    
     const handleLogout = useCallback(() => {
         localStorage.removeItem("token")
-        navigate("/", { replace: true })
+        navigate("/")
     }, [navigate])
 
+   
+   
     const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0] || null
         setProfileImageFile(file)
@@ -82,6 +81,8 @@ function HomePage(){
         }
     }
 
+    
+    
     useEffect(() => {
         const token = localStorage.getItem("token")
 
@@ -90,37 +91,51 @@ function HomePage(){
             return
         }
 
+        const controller = new AbortController()
+
         const getCurrentUser = async () => {
             try {
                 const response = await axios.get<UserDto>("http://localhost:8080/api/v1/users/me", {
+                    signal: controller.signal,
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 })
 
+                if (controller.signal.aborted) return
+
                 const data: UserDto = response.data
                 setUser(data)
-            } catch {
+            } catch (error) {
+                if (controller.signal.aborted || axios.isCancel(error)) return
+
                 handleLogout()
                 return
             }
 
             try {
                 const profileImageResponse = await axios.get<Blob>("http://localhost:8080/api/v1/users/profile-image", {
+                    signal: controller.signal,
                     headers: {
                         Authorization: `Bearer ${token}`
                     },
                     responseType: "blob"
                 })
 
+                if (controller.signal.aborted) return
+
                 const imageUrl = URL.createObjectURL(profileImageResponse.data)
                 setProfileImageUrl(imageUrl)
-            } catch {
+            } catch (error) {
+                if (controller.signal.aborted || axios.isCancel(error)) return
+
                 setProfileImageUrl("")
             }
         }
 
         getCurrentUser()
+
+        return () => controller.abort()
     }, [handleLogout])
 
     useEffect(() => {
@@ -131,6 +146,8 @@ function HomePage(){
         }
     }, [profileImageUrl])
 
+    
+    
     useEffect(() => {
         return () => {
             if (selectedProfileImageUrl) {
@@ -139,6 +156,10 @@ function HomePage(){
         }
     }, [selectedProfileImageUrl])
 
+   
+   
+   
+   
     return(
         <div className="min-h-dvh w-full bg-gray-200 bg-cover bg-center bg-no-repeat" style={{backgroundImage: `url(${homeBackground})`}}>
             <SharedHeader>

@@ -4,9 +4,10 @@ import { useNavigate } from "react-router"
 export type Post = {
     id: number
     userId: number | null
+    dateCreated: string | null
     imageUrls: string[]
     itemName: string
-    postType: "LOST" | "FOUND"
+    postType: "LOST" | "FOUND" | "RESOLVED"
 }
 
 type PostCardProps = {
@@ -19,7 +20,7 @@ function PostCard({ post }: PostCardProps) {
     const firstImage = post.imageUrls[0]
 
     return (
-        <button type="button" onClick={() => navigate(`/postDetails/${post.id}`)} className="w-full cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-transform duration-200 ease-in-out active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800">
+        <button type="button" onClick={() => navigate(`/postDetails/${post.id}`)} className={`w-full cursor-pointer overflow-hidden rounded-lg border text-left shadow-sm transition-transform duration-200 ease-in-out active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800 ${(post.postType === "RESOLVED") ? "border-gray-300 bg-gray-100" : "border-gray-200 bg-white"}`}>
             {firstImage && !imageFailed ? (
                 <img src={firstImage} alt={post.itemName} loading="lazy" onError={() => setImageFailed(true)} className="h-40 w-full object-cover" />
             ) : (
@@ -27,8 +28,8 @@ function PostCard({ post }: PostCardProps) {
             )}
             <span className="flex flex-col items-start gap-2 p-4">
                 <span className="w-full break-words text-base font-semibold text-gray-800">{post.itemName}</span>
-                <span className={`rounded-full px-3 py-1 text-xs font-medium ${post.postType === "LOST" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                    {post.postType === "LOST" ? "Lost" : "Found"}
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${post.postType === "RESOLVED" ? "bg-gray-700 text-white" : post.postType === "LOST" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                    {post.postType === "RESOLVED" ? "Resolved" : post.postType === "LOST" ? "Lost" : "Found"}
                 </span>
             </span>
         </button>

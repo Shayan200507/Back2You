@@ -5,23 +5,9 @@ import axios from "axios"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import SharedHeader from "../Components/SharedHeader"
-import type { Post } from "../Components/PostCard"
+import type { PostDto } from "../types/PostDto"
 
-type UserDto = {
-    id: number
-    firstname: string
-    lastname: string
-    universityName: string
-    email: string
-    role: "USER" | "ADMIN"
-}
-
-type PostDto = Post & {
-    itemDescription: string
-    date: string | null
-    location: string | null
-    securityQuestions: string[]
-}
+import type { UserDto } from "../types/UserDto"
 
 function PostDetails() {
     const { postId } = useParams<{ postId: string }>()
@@ -32,9 +18,42 @@ function PostDetails() {
     const [error, setError] = useState("")
     const [isDeleting, setIsDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState("")
+    const [isResolving, setIsResolving] = useState(false)
+    const [resolveError, setResolveError] = useState("")
+
+
+
+
+
+    const handleResolve = async () => {
+        if (!user || !post || post.userId !== user.id || post.postType === "RESOLVED" || isResolving || isDeleting) return
+        const token = localStorage.getItem("token")
+        if (!token) {
+            navigate("/", { replace: true })
+            return
+        }
+        setIsResolving(true)
+        setResolveError("")
+        try {
+            await axios.patch("http://localhost:8080/api/v1/posts/resolved-post", null, {
+                params: { postId: post.id },
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            setPost(current => current?.id === post.id ? { ...current, postType: "RESOLVED" } : current)
+        } catch (requestError) {
+            if (axios.isAxiosError(requestError) && requestError.response?.status === 401) {
+                localStorage.removeItem("token")
+                navigate("/", { replace: true })
+                return
+            }
+            setResolveError("Could not resolve the post. Please try again.")
+        } finally {
+            setIsResolving(false)
+        }
+    }
 
     const handleDelete = async () => {
-        if (!user || !post || post.userId !== user.id || isDeleting) return
+        if (!user || !post || post.userId !== user.id || isDeleting || isResolving) return
         const token = localStorage.getItem("token")
         if (!token) {
             navigate("/", { replace: true })
@@ -85,6 +104,7 @@ function PostDetails() {
             setIsLoading(true)
             setError("")
             setDeleteError("")
+            setResolveError("")
             setUser(null)
             setPost(null)
             const config = {
@@ -127,7 +147,7 @@ function PostDetails() {
     return (
         <div className="min-h-dvh bg-gray-200">
             <SharedHeader>
-                <button type="button" onClick={() => navigate("/home")} className="rounded-md bg-gray-800 px-4 py-1 text-sm font-medium text-white hover:bg-gray-700">Home</button>
+                <button type="button" onClick={() => navigate("/home")} className="cursor-pointer rounded-lg bg-gray-800 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800">Home</button>
             </SharedHeader>
             <main className="mx-auto max-w-2xl p-6">
                 <section className="rounded-xl bg-white p-6 shadow-sm">
@@ -136,7 +156,8 @@ function PostDetails() {
                         : user && post ? (
                             <div className="flex flex-col gap-4">
                                 <h1 className="break-words text-2xl font-semibold text-gray-800">{post.itemName}</h1>
-                                <p className="text-sm font-medium text-gray-600">{post.postType === "LOST" ? "Lost" : "Found"}{post.userId === user.id ? " · Your post" : ""}</p>
+                                {(post.postType === "RESOLVED") && <p className="self-start rounded-full bg-gray-700 px-3 py-1 text-sm font-medium text-white">Resolved</p>}
+                                <p className="text-sm font-medium text-gray-600">{post.postType === "RESOLVED" ? "Resolved" : post.postType === "LOST" ? "Lost" : "Found"}{post.userId === user.id ? " · Your post" : ""}</p>
                                 {post.imageUrls.length > 0 && (
                                     <div className="flex flex-wrap gap-3">
                                         {post.imageUrls.map((url, index) => <img key={url} src={url} alt={`${post.itemName}, photo ${index + 1}`} className="h-48 w-full rounded-md bg-gray-100 object-contain sm:w-60" />)}
@@ -145,7 +166,7 @@ function PostDetails() {
                                 <p className="whitespace-pre-wrap break-words text-gray-700">{post.itemDescription}</p>
                                 <p className="text-sm text-gray-600">Location: {post.location || "Not provided"}</p>
                                 <p className="text-sm text-gray-600">Date: {post.date || "Not provided"}</p>
-                                {post.postType === "FOUND" && (
+                                {(post.postType === "FOUND" || (post.postType === "RESOLVED" && post.securityQuestions.length > 0)) && (
                                     <section className="rounded-md border border-gray-200 bg-gray-50 p-4">
                                         <h2 className="text-base font-semibold text-gray-800">Security questions</h2>
                                         {post.securityQuestions.length > 0 ? (
@@ -160,13 +181,29 @@ function PostDetails() {
                                     </section>
                                 )}
                                 {post.userId === user.id && (
-                                    <div className="flex flex-col items-start gap-3">
+                                    <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-5">
+                                        {resolveError && <p role="alert" className="w-full rounded-md bg-red-50 p-3 text-sm text-red-700">{resolveError}</p>}
+                                        {post.postType !== "RESOLVED" && (
+                                            <button type="button" onClick={handleResolve} disabled={isResolving || isDeleting} className="inline-flex h-11 w-36 shrink-0 items-center justify-center cursor-pointer rounded-lg border border-transparent bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                                {isResolving ? "Resolving..." : "Resolve post"}
+                                            </button>
+                                        )}
                                         {deleteError && <p role="alert" className="w-full rounded-md bg-red-50 p-3 text-sm text-red-700">{deleteError}</p>}
-                                        <button type="button" onClick={handleDelete} disabled={isDeleting} className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-transform duration-200 ease-in-out hover:bg-red-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60">
+                                        <button type="button" onClick={handleDelete} disabled={isDeleting || isResolving} className="inline-flex h-11 w-36 shrink-0 items-center justify-center cursor-pointer rounded-lg border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-60">
                                             {isDeleting ? "Deleting..." : "Delete post"}
                                         </button>
+
+                                        {<button
+                                                        type="button"
+                                                        className="inline-flex h-11 w-36 shrink-0 items-center justify-center cursor-pointer rounded-lg border border-transparent bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-800"
+                                                        onClick={() => navigate(`/Claim/${post.id}`)}
+                                                    >
+                                                        Claim
+                                                    </button>}
+
                                     </div>
                                 )}
+
                             </div>
                         ) : null}
                 </section>
